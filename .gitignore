@@ -1,0 +1,10 @@
+data/
+checkpoints/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.env
+.why_augmentation
