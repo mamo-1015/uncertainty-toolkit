@@ -90,61 +90,61 @@ def scatter_ua_ue(
 # 2a. Histograms — same scale
 # ---------------------------------------------------------------------------
 
-def uncertainty_histograms(
-    ue: "array-like",
-    ua: "array-like",
-    correct: "array-like",
-    output_dir: str | Path,
-    bins: int = 60,
-) -> Path:
-    """
-    Two-panel density histogram where BOTH panels share the same y-axis scale.
+# def uncertainty_histograms(
+#     ue: "array-like",
+#     ua: "array-like",
+#     correct: "array-like",
+#     output_dir: str | Path,
+#     bins: int = 60,
+# ) -> Path:
+#     """
+#     Two-panel density histogram where BOTH panels share the same y-axis scale.
 
-    Honest magnitude comparison — if Ua spans a wider range its bars will
-    appear flatter than Ue.  Use this to compare absolute density heights.
-    Saved as uncertainty_histograms.png.
-    """
-    ue, ua, correct = to_numpy(ue), to_numpy(ua), to_numpy(correct).astype(bool)
+#     Honest magnitude comparison — if Ua spans a wider range its bars will
+#     appear flatter than Ue.  Use this to compare absolute density heights.
+#     Saved as uncertainty_histograms.png.
+#     """
+#     ue, ua, correct = to_numpy(ue), to_numpy(ua), to_numpy(correct).astype(bool)
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+#     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 
-    max_density = 0.0
-    configs = [
-        (axes[0], ue, "Epistemic Uncertainty  $U_e$", "Epistemic"),
-        (axes[1], ua, "Aleatoric Uncertainty  $U_a$",  "Aleatoric"),
-    ]
+#     max_density = 0.0
+#     configs = [
+#         (axes[0], ue, "Epistemic Uncertainty  $U_e$", "Epistemic"),
+#         (axes[1], ua, "Aleatoric Uncertainty  $U_a$",  "Aleatoric"),
+#     ]
 
-    # First pass — draw histograms and track max density
-    for ax, values, xlabel, metric_name in configs:
-        shared_range = (float(values.min()), float(values.max()))
-        n_c, _, _ = ax.hist(values[correct],  bins=bins, range=shared_range,
-                            density=True, color=_CORRECT_COLOR, alpha=0.65,
-                            label="Correct", edgecolor="none")
-        n_w, _, _ = ax.hist(values[~correct], bins=bins, range=shared_range,
-                            density=True, color=_WRONG_COLOR, alpha=0.65,
-                            label="Misclassified", edgecolor="none")
-        ax.set_xlabel(xlabel, fontsize=12)
-        ax.set_ylabel("Density", fontsize=12)
-        ax.set_title(f"{metric_name} Uncertainty Distribution", fontsize=13, fontweight="bold")
-        ax.legend(fontsize=10)
-        ax.grid(True, **_GRID_KW)
-        max_density = max(max_density, float(n_c.max()), float(n_w.max()))
+#     # First pass — draw histograms and track max density
+#     for ax, values, xlabel, metric_name in configs:
+#         shared_range = (float(values.min()), float(values.max()))
+#         n_c, _, _ = ax.hist(values[correct],  bins=bins, range=shared_range,
+#                             density=True, color=_CORRECT_COLOR, alpha=0.65,
+#                             label="Correct", edgecolor="none")
+#         n_w, _, _ = ax.hist(values[~correct], bins=bins, range=shared_range,
+#                             density=True, color=_WRONG_COLOR, alpha=0.65,
+#                             label="Misclassified", edgecolor="none")
+#         ax.set_xlabel(xlabel, fontsize=12)
+#         ax.set_ylabel("Density", fontsize=12)
+#         ax.set_title(f"{metric_name} Uncertainty Distribution", fontsize=13, fontweight="bold")
+#         ax.legend(fontsize=10)
+#         ax.grid(True, **_GRID_KW)
+#         max_density = max(max_density, float(n_c.max()), float(n_w.max()))
 
-    # Second pass — enforce same y-limit on both panels
-    for ax in axes:
-        ax.set_ylim(0, max_density * 1.12)
+#     # Second pass — enforce same y-limit on both panels
+#     for ax in axes:
+#         ax.set_ylim(0, max_density * 1.12)
 
-    fig.suptitle(
-        "Uncertainty Distributions: Correct vs Misclassified  [same scale]",
-        fontsize=14, fontweight="bold", y=1.02,
-    )
-    fig.tight_layout()
+#     fig.suptitle(
+#         "Uncertainty Distributions: Correct vs Misclassified  [same scale]",
+#         fontsize=14, fontweight="bold", y=1.02,
+#     )
+#     fig.tight_layout()
 
-    out = Path(output_dir) / "uncertainty_histograms.png"
-    fig.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f"[viz] saved → {out}")
-    return out
+#     out = Path(output_dir) / "uncertainty_histograms.png"
+#     fig.savefig(out, dpi=150, bbox_inches="tight")
+#     plt.close(fig)
+#     print(f"[viz] saved → {out}")
+#     return out
 
 
 # ---------------------------------------------------------------------------
@@ -158,13 +158,6 @@ def uncertainty_histograms_twinx(
     output_dir: str | Path,
     bins: int = 60,
 ) -> Path:
-    """
-    Two-panel density histogram where each panel has INDEPENDENT y-axes:
-      Left y-axis  (blue ticks)  — Correct distribution 
-      Right y-axis (red ticks)   — Misclassified distribution 
-
-   
-    """
     ue, ua, correct = to_numpy(ue), to_numpy(ua), to_numpy(correct).astype(bool)
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
@@ -174,30 +167,37 @@ def uncertainty_histograms_twinx(
         (axes[1], ua, "Aleatoric Uncertainty  $U_a$",  "Aleatoric"),
     ]:
         shared_range = (float(values.min()), float(values.max()))
+        bin_edges    = np.linspace(shared_range[0], shared_range[1], bins + 1)
+        bin_width    = bin_edges[1] - bin_edges[0]
+        bin_centers  = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-        # Left y-axis — Correct
-        n_c, _, _ = ax.hist(values[correct], bins=bins, range=shared_range,
-                            density=True, color=_CORRECT_COLOR, alpha=0.65,
-                            edgecolor="none")
-        ax.set_xlabel(xlabel, fontsize=12)
+        # Manual density computation — ax.hist density=True breaks on twinx
+        counts_c, _ = np.histogram(values[correct],  bins=bin_edges)
+        counts_w, _ = np.histogram(values[~correct], bins=bin_edges)
+        density_c   = counts_c / (counts_c.sum() )
+        density_w   = counts_w / (counts_w.sum() )
+
+        # Left axis — Correct (blue)
+        ax.bar(bin_centers, density_c, width=bin_width,
+               color=_CORRECT_COLOR, alpha=0.65)
         ax.set_ylabel("Correct", fontsize=11, color=_CORRECT_COLOR)
         ax.tick_params(axis="y", labelcolor=_CORRECT_COLOR)
-        ax.set_ylim(0, float(n_c.max()) * 1.25)
+        ax.set_ylim(0, density_c.max() * 1.25)
 
-        # Right y-axis — Misclassified
+        # Right axis — Misclassified (red)
         ax2 = ax.twinx()
-        n_w, _, _ = ax2.hist(values[~correct], bins=bins, range=shared_range,
-                             density=True, color=_WRONG_COLOR, alpha=0.65,
-                             edgecolor="none")
+        ax2.bar(bin_centers, density_w, width=bin_width,
+                color=_WRONG_COLOR, alpha=0.65)
         ax2.set_ylabel("Misclassified", fontsize=11, color=_WRONG_COLOR)
         ax2.tick_params(axis="y", labelcolor=_WRONG_COLOR)
-        ax2.set_ylim(0, float(n_w.max()) * 1.25)
+        ax2.set_ylim(0, density_w.max() * 1.25)
 
         handles = [
             mpatches.Patch(color=_CORRECT_COLOR, alpha=0.65, label="Correct"),
             mpatches.Patch(color=_WRONG_COLOR,   alpha=0.65, label="Misclassified"),
         ]
         ax.legend(handles=handles, fontsize=10)
+        ax.set_xlabel(xlabel, fontsize=12)
         ax.set_title(
             f"{metric_name} Uncertainty Distribution\n(independent y-axes)",
             fontsize=13, fontweight="bold",
@@ -216,62 +216,61 @@ def uncertainty_histograms_twinx(
     print(f"[viz] saved → {out}")
     return out
 
-
 # ---------------------------------------------------------------------------
 # 3a. Per-class bar chart — same scale
 # ---------------------------------------------------------------------------
 
-def per_class_breakdown(
-    ue: "array-like",
-    ua: "array-like",
-    labels: "array-like",
-    output_dir: str | Path,
-    class_names: Optional[Sequence[str]] = None,
-) -> Path:
-    """
-    Grouped bar chart of mean Ue and Ua per class — SAME y-axis scale.
+# def per_class_breakdown(
+#     ue: "array-like",
+#     ua: "array-like",
+#     labels: "array-like",
+#     output_dir: str | Path,
+#     class_names: Optional[Sequence[str]] = None,
+# ) -> Path:
+#     """
+#     Grouped bar chart of mean Ue and Ua per class — SAME y-axis scale.
 
-    Both metrics share one y-axis so the absolute magnitude difference
-    between Ue and Ua is visible.
-    Saved as per_class_breakdown.png.
-    """
-    ue, ua, labels = to_numpy(ue), to_numpy(ua), to_numpy(labels).astype(int)
-    classes = np.unique(labels)
-    n_classes = len(classes)
-    if class_names is None:
-        class_names = [str(c) for c in classes]
+#     Both metrics share one y-axis so the absolute magnitude difference
+#     between Ue and Ua is visible.
+#     Saved as per_class_breakdown.png.
+#     """
+#     ue, ua, labels = to_numpy(ue), to_numpy(ua), to_numpy(labels).astype(int)
+#     classes = np.unique(labels)
+#     n_classes = len(classes)
+#     if class_names is None:
+#         class_names = [str(c) for c in classes]
 
-    mean_ue = np.array([ue[labels == c].mean() for c in classes])
-    mean_ua = np.array([ua[labels == c].mean() for c in classes])
+#     mean_ue = np.array([ue[labels == c].mean() for c in classes])
+#     mean_ua = np.array([ua[labels == c].mean() for c in classes])
 
-    x, bar_w = np.arange(n_classes), 0.38
-    fig, ax = plt.subplots(figsize=(max(10, n_classes * 1.1), 6))
+#     x, bar_w = np.arange(n_classes), 0.38
+#     fig, ax = plt.subplots(figsize=(max(10, n_classes * 1.1), 6))
 
-    bars_ue = ax.bar(x - bar_w / 2, mean_ue, bar_w, label="Epistemic $U_e$",
-                     color=_UE_COLOR, alpha=0.85, edgecolor="white", linewidth=0.5)
-    bars_ua = ax.bar(x + bar_w / 2, mean_ua, bar_w, label="Aleatoric $U_a$",
-                     color=_UA_COLOR, alpha=0.85, edgecolor="white", linewidth=0.5)
+#     bars_ue = ax.bar(x - bar_w / 2, mean_ue, bar_w, label="Epistemic $U_e$",
+#                      color=_UE_COLOR, alpha=0.85, edgecolor="white", linewidth=0.5)
+#     bars_ua = ax.bar(x + bar_w / 2, mean_ua, bar_w, label="Aleatoric $U_a$",
+#                      color=_UA_COLOR, alpha=0.85, edgecolor="white", linewidth=0.5)
 
-    y_max = max(mean_ue.max(), mean_ua.max())
-    for bar in (*bars_ue, *bars_ua):
-        h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + y_max * 0.01,
-                f"{h:.4f}", ha="center", va="bottom", fontsize=7.5)
+#     y_max = max(mean_ue.max(), mean_ua.max())
+#     for bar in (*bars_ue, *bars_ua):
+#         h = bar.get_height()
+#         ax.text(bar.get_x() + bar.get_width() / 2, h + y_max * 0.01,
+#                 f"{h:.4f}", ha="center", va="bottom", fontsize=7.5)
 
-    ax.set_xticks(x)
-    ax.set_xticklabels(class_names, rotation=30, ha="right", fontsize=11)
-    ax.set_ylabel("Mean Uncertainty", fontsize=12)
-    ax.set_title("Per-Class Mean Uncertainty", fontsize=14, fontweight="bold")
-    ax.legend(fontsize=11)
-    ax.grid(True, axis="y", **_GRID_KW)
-    ax.set_axisbelow(True)
-    fig.tight_layout()
+#     ax.set_xticks(x)
+#     ax.set_xticklabels(class_names, rotation=30, ha="right", fontsize=11)
+#     ax.set_ylabel("Mean Uncertainty", fontsize=12)
+#     ax.set_title("Per-Class Mean Uncertainty", fontsize=14, fontweight="bold")
+#     ax.legend(fontsize=11)
+#     ax.grid(True, axis="y", **_GRID_KW)
+#     ax.set_axisbelow(True)
+#     fig.tight_layout()
 
-    out = Path(output_dir) / "per_class_breakdown.png"
-    fig.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f"[viz] saved → {out}")
-    return out
+#     out = Path(output_dir) / "per_class_breakdown.png"
+#     fig.savefig(out, dpi=150, bbox_inches="tight")
+#     plt.close(fig)
+#     print(f"[viz] saved → {out}")
+#     return out
 
 
 # ---------------------------------------------------------------------------
