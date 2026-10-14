@@ -2,7 +2,7 @@
 
 Plug-and-play uncertainty estimation for any PyTorch classifier.
 
-Built as the foundational uncertainty module for the **R3AL.AI SDK** — wraps an arbitrary `nn.Module` and extracts two distinct uncertainty scores per prediction, with no changes to model weights or architecture.
+Built on which — wraps an arbitrary `nn.Module` and extracts two distinct uncertainty scores per prediction, with no changes to model weights or architecture.
 
 ---
 
